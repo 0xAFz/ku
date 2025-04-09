@@ -2,6 +2,7 @@ package iaas
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/0xAFz/ku/internal/api"
@@ -35,32 +36,38 @@ var applyCmd = &cobra.Command{
 
 		var newState []api.KubarInstance
 
+		var wg sync.WaitGroup
+
 		for _, req := range desired {
 			if existing, exists := currentMap[req.Name]; !exists || existing.IP != nil {
+				wg.Add(1)
 				// Create VM if it doesn’t exist or isn’t active
-				fmt.Printf("kubar_compute_instance.%s: Creating...\n", req.Name)
-				if err := provider.CreateInstance(req); err != nil {
-					fmt.Printf("%s: %v\n", req.Name, err)
-					continue
-				}
-				start := time.Now()
-				waitCount := 1
-				for {
-					fmt.Printf("kubar_compute_instance.%s: Still creating... [%ds elapsed]\n", req.Name, waitCount)
-					time.Sleep(time.Second * 1)
-					waitCount++
-					ins, err := provider.GetInstance(req.Name)
-					if err != nil {
-						fmt.Printf("failed to get resource: %v\n", err)
-						continue
+				go func() {
+					defer wg.Done()
+					fmt.Printf("kubar_compute_instance.%s: Creating...\n", req.Name)
+					if err := provider.CreateInstance(req); err != nil {
+						fmt.Printf("%s: %v\n", req.Name, err)
+						return
 					}
-					if ins.IP == nil {
-						continue
+					start := time.Now()
+					waitCount := 1
+					for {
+						fmt.Printf("kubar_compute_instance.%s: Still creating... [%ds elapsed]\n", req.Name, waitCount)
+						time.Sleep(time.Second * 1)
+						waitCount++
+						ins, err := provider.GetInstance(req.Name)
+						if err != nil {
+							fmt.Printf("failed to get resource: %v\n", err)
+							continue
+						}
+						if ins.IP == nil {
+							continue
+						}
+						newState = append(newState, *ins)
+						break
 					}
-					newState = append(newState, *ins)
-					break
-				}
-				fmt.Printf("kubar_compute_instance.%s: Creation complete after %v\n", req.Name, time.Since(start))
+					fmt.Printf("kubar_compute_instance.%s: Creation complete after %v\n", req.Name, time.Since(start))
+				}()
 			} else {
 				// Keep existing VM
 				newState = append(newState, existing)
@@ -70,13 +77,18 @@ var applyCmd = &cobra.Command{
 		// Process current state: destroy unwanted VMs
 		for name, vm := range currentMap {
 			if _, keep := desiredMap[name]; !keep {
-				if err := provider.DeleteInstance(map[string]string{"name": vm.Name}); err != nil {
-					fmt.Println(err)
-					continue
-				}
-				fmt.Printf("Destroyed: %s\n", name)
+				wg.Add(1)
+				go func() {
+					if err := provider.DeleteInstance(map[string]string{"name": vm.Name}); err != nil {
+						fmt.Println(err)
+						return
+					}
+					fmt.Printf("kubar_compute_instance.%s: Destruction complete\n", vm.Name)
+				}()
 			}
 		}
+
+		wg.Wait()
 
 		if err := state.WriteCurrentState(newState); err != nil {
 			fmt.Println("update current state:", err)

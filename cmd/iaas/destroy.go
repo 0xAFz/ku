@@ -20,7 +20,7 @@ var destroyCmd = &cobra.Command{
 
 		for _, v := range current {
 			if err := provider.DeleteInstance(map[string]string{"name": v.Name}); err != nil {
-				fmt.Printf("%s: %v\n", v.Name, err)
+				fmt.Printf("kubar_compute_instance.%s: %v\n", v.Name, err)
 				return
 			}
 			fmt.Printf("kubar_compute_instance.%s: Destruction complete\n", v.Name)
