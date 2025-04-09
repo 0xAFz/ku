@@ -1,0 +1,12 @@
+[
+    {
+        "name": "cloud",
+        "image": "Debian-12",
+        "flavor": "g1-1-1",
+        "disk_size": 15,
+        "key_name": [],
+        "public_key": [
+            "ssh-ed25519 ..."
+        ]
+    }
+]
