@@ -35,7 +35,7 @@
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/0xAFz/ku.git
     cd ku
     ```
 2.  **Build the binary:**
