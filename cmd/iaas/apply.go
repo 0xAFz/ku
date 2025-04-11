@@ -2,6 +2,7 @@ package iaas
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -16,12 +17,12 @@ var applyCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		desired, err := state.ReadDesiredState()
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 			return
 		}
 		current, err := state.ReadCurrentState()
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 			return
 		}
 
@@ -39,7 +40,7 @@ var applyCmd = &cobra.Command{
 		var wg sync.WaitGroup
 
 		for _, req := range desired {
-			if existing, exists := currentMap[req.Name]; !exists || existing.IP != nil {
+			if existing, exists := currentMap[req.Name]; !exists {
 				wg.Add(1)
 				// Create VM if it doesn’t exist or isn’t active
 				go func() {
@@ -91,7 +92,7 @@ var applyCmd = &cobra.Command{
 		wg.Wait()
 
 		if err := state.WriteCurrentState(newState); err != nil {
-			fmt.Println("update current state:", err)
+			log.Fatal(err)
 			return
 		}
 	},

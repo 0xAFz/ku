@@ -25,7 +25,7 @@ func (a *Provider) CreateInstance(req api.KubarInstanceRequest) error {
 	endpoint := "/create"
 	_, err := a.client.Post(endpoint, req)
 	if err != nil {
-		return fmt.Errorf("create resource: %w", err)
+		return fmt.Errorf("create instance: %w", err)
 	}
 	return nil
 }
@@ -34,7 +34,7 @@ func (a *Provider) GetInstance(name string) (*api.KubarInstance, error) {
 	endpoint := fmt.Sprintf("/list?name=%s", name)
 	resp, err := a.client.Get(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("get resource: %w", err)
+		return nil, fmt.Errorf("get instance: %w", err)
 	}
 	var instance api.KubarInstance
 	if err := json.Unmarshal(resp, &instance); err != nil {
@@ -47,7 +47,7 @@ func (a *Provider) DeleteInstance(payload map[string]string) error {
 	endpoint := "/delete"
 	_, err := a.client.Delete(endpoint, payload)
 	if err != nil {
-		return fmt.Errorf("delete resource: %w", err)
+		return fmt.Errorf("delete instance: %w", err)
 	}
 	return nil
 }
