@@ -19,7 +19,7 @@ var IaaSCmd = &cobra.Command{
 		provider = vm.NewProvider(apiClient)
 	},
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println("Usage: kumo iaas <action>")
+		fmt.Println("action required")
 	},
 }
 

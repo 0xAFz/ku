@@ -20,24 +20,34 @@ var destroyCmd = &cobra.Command{
 		}
 
 		var wg sync.WaitGroup
+		var mu sync.Mutex
 
-		for _, v := range current {
+		for i := range current {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				if err := provider.DeleteInstance(map[string]string{"name": v.Name}); err != nil {
-					fmt.Printf("kubar_compute_instance.%s: %v\n", v.Name, err)
+				if err := provider.DeleteInstance(map[string]string{"name": current[i].Name}); err != nil {
+					fmt.Printf("kubar_compute_instance.%s: %v\n", current[i].Name, err)
 					return
 				}
-				fmt.Printf("kubar_compute_instance.%s: Destruction complete\n", v.Name)
+				fmt.Printf("kubar_compute_instance.%s: Destruction complete\n", current[i].Name)
+
+				mu.Lock()
+				current = removeResource(current, i)
+				mu.Unlock()
 			}()
 		}
 
 		wg.Wait()
 
-		if err := state.WriteCurrentState([]api.KubarInstance{}); err != nil {
+		if err := state.WriteCurrentState(current); err != nil {
 			fmt.Println("update current state:", err)
 			return
 		}
 	},
+}
+
+func removeResource(s []api.KubarInstance, i int) []api.KubarInstance {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }

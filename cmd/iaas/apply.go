@@ -47,18 +47,18 @@ var applyCmd = &cobra.Command{
 					defer wg.Done()
 					fmt.Printf("kubar_compute_instance.%s: Creating...\n", req.Name)
 					if err := provider.CreateInstance(req); err != nil {
-						fmt.Printf("%s: %v\n", req.Name, err)
+						fmt.Printf("kubar_compute_instance.%s: %v\n", req.Name, err)
 						return
 					}
 					start := time.Now()
-					waitCount := 1
+					waitCount := 10
 					for {
+						time.Sleep(time.Second * 10)
 						fmt.Printf("kubar_compute_instance.%s: Still creating... [%ds elapsed]\n", req.Name, waitCount)
-						time.Sleep(time.Second * 1)
-						waitCount++
+						waitCount += 10
 						ins, err := provider.GetInstance(req.Name)
 						if err != nil {
-							fmt.Printf("failed to get resource: %v\n", err)
+							fmt.Printf("kubar_compute_instance.%s: %v", req.Name, err)
 							continue
 						}
 						if ins.IP == nil {
