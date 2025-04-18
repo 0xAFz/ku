@@ -24,7 +24,7 @@ var destroyCmd = &cobra.Command{
 
 		for i := range current {
 			wg.Add(1)
-			go func() {
+			go func(i int) {
 				defer wg.Done()
 				if err := provider.DeleteInstance(map[string]string{"name": current[i].Name}); err != nil {
 					fmt.Printf("kubar_compute_instance.%s: %v\n", current[i].Name, err)
@@ -35,7 +35,7 @@ var destroyCmd = &cobra.Command{
 				mu.Lock()
 				current = removeResource(current, i)
 				mu.Unlock()
-			}()
+			}(i)
 		}
 
 		wg.Wait()
