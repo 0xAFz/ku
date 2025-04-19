@@ -20,7 +20,7 @@ var destroyCmd = &cobra.Command{
 		}
 
 		var wg sync.WaitGroup
-		var mu sync.Mutex
+		removeChan := make(chan int, len(current))
 
 		for i := range current {
 			wg.Add(1)
@@ -31,14 +31,22 @@ var destroyCmd = &cobra.Command{
 					return
 				}
 				fmt.Printf("kubar_compute_instance.%s: Destruction complete\n", current[i].Name)
-
-				mu.Lock()
-				current = removeResource(current, i)
-				mu.Unlock()
 			}(i)
 		}
 
-		wg.Wait()
+		var removeIndexes []int
+		go func() {
+			wg.Wait()
+			close(removeChan)
+		}()
+
+		for i := range removeChan {
+			removeIndexes = append(removeIndexes, i)
+		}
+
+		for i := len(removeIndexes) - 1; i >= 0; i-- {
+			current = removeResource(current, removeIndexes[i])
+		}
 
 		if err := state.WriteCurrentState(current); err != nil {
 			fmt.Println("update current state:", err)
